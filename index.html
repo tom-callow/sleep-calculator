@@ -108,7 +108,7 @@ let useWheel = false;
 let wtm = 22*60+30;
 
 function hIdx(){ return H12.indexOf((Math.floor(wtm/60)%12)||12); }
-function mIdx(){ let i=M15.indexOf(wtm%60); return i<0?0:i; }
+function mIdx(){ const r=Math.round((wtm%60)/15)*15%60; wtm=Math.floor(wtm/60)*60+r; return M15.indexOf(r); }
 function aIdx(){ return Math.floor(wtm/60)>=12?1:0; }
 
 function calculate(){
