@@ -113,7 +113,8 @@ function pad(n){ return String(n).padStart(2,'0'); }
 
 let useWheel = false;
 let useReverse = false;
-let wtm = 22*60+30;
+const _t=new Date(), _r=Math.ceil((_t.getHours()*60+_t.getMinutes())/15)*15%1440;
+let wtm=_r;
 
 function hIdx(){ return H12.indexOf((Math.floor(wtm/60)%12)||12); }
 function mIdx(){ const r=Math.round((wtm%60)/15)*15%60; wtm=Math.floor(wtm/60)*60+r; return M15.indexOf(r); }
@@ -282,6 +283,7 @@ DA=makeDrum('dA','dA-i',AMP,aIdx,idx=>{
   calculate();
 });
 
+document.getElementById('tInput').value=pad(Math.floor(wtm/60))+':'+pad(wtm%60);
 calculate();
 
 function setAlarm(h, m){
