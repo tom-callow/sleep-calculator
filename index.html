@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sleep">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Sleep Cycle Calculator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0f; min-height: 100vh; color: #e5e5e7; }
+  .wrap { padding: 2.5rem 1rem 3rem; max-width: 400px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 600; text-align: center; color: #f2f2f7; margin-bottom: 6px; }
+  .subtitle { font-size: 14px; color: #636366; text-align: center; margin-bottom: 1.75rem; }
+  .toggle-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 1.75rem; }
+  .toggle-label { font-size: 14px; color: #636366; }
+  .toggle-label.active { color: #f2f2f7; font-weight: 600; }
+  .toggle-track { width: 48px; height: 28px; border-radius: 999px; background: #2c2c2e; cursor: pointer; position: relative; transition: background 0.2s; border: none; outline: none; }
+  .toggle-track.on { background: #30d158; }
+  .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+  .toggle-track.on .toggle-thumb { transform: translateX(20px); }
+  .card { background: #1c1c1e; border-radius: 16px; padding: 1.25rem; margin-bottom: 1.25rem; border: 0.5px solid #2c2c2e; }
+  .card-label { font-size: 13px; color: #636366; margin-bottom: 10px; }
+  .time-row { display: flex; align-items: center; gap: 10px; }
+  input[type=time] { flex: 1; font-size: 24px; font-weight: 600; padding: 10px 12px; border: 1px solid #3a3a3c; border-radius: 10px; background: #2c2c2e; color: #f2f2f7; outline: none; }
+  input[type=time]:focus { border-color: #0a84ff; }
+  .now-btn { font-size: 14px; font-weight: 500; padding: 10px 16px; border-radius: 10px; border: 1px solid #3a3a3c; background: #2c2c2e; color: #0a84ff; cursor: pointer; white-space: nowrap; }
+  .now-btn:active { opacity: 0.6; }
+  .wheel-now-row { display: flex; justify-content: flex-end; margin-bottom: 14px; }
+  .wheel-outer { display: flex; align-items: center; justify-content: center; }
+  .wheel-sep { font-size: 32px; font-weight: 600; color: #f2f2f7; padding: 0 4px; }
+  .ampm-col { margin-left: 12px; }
+  .drum { width: 88px; height: 159px; overflow: hidden; position: relative; cursor: grab; user-select: none; touch-action: none; }
+  .drum.narrow { width: 68px; }
+  .drum-inner { position: absolute; left: 0; right: 0; top: 0; }
+  .drum-item { height: 53px; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 500; color: #48484a; }
+  .drum-item.sel { color: #f2f2f7; font-size: 32px; font-weight: 600; }
+  .drum-fade-top { position: absolute; top: 0; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, #1c1c1e 20%, transparent); pointer-events: none; z-index: 2; }
+  .drum-fade-bot { position: absolute; bottom: 0; left: 0; right: 0; height: 60px; background: linear-gradient(to top, #1c1c1e 20%, transparent); pointer-events: none; z-index: 2; }
+  .drum-sel-bar { position: absolute; top: 53px; left: 0; right: 0; height: 53px; border-top: 0.5px solid #3a3a3c; border-bottom: 0.5px solid #3a3a3c; pointer-events: none; z-index: 1; }
+  .section-label { font-size: 12px; font-weight: 600; color: #48484a; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; padding-left: 4px; }
+  .results { display: flex; flex-direction: column; gap: 10px; }
+  .result-item { border-radius: 14px; background: #1c1c1e; border: 0.5px solid #2c2c2e; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; }
+  .result-item.best { background: #0d2318; border: 1.5px solid #30d158; }
+  .wt { font-size: 24px; font-weight: 600; color: #f2f2f7; }
+  .result-item.best .wt { color: #30d158; }
+  .cl { font-size: 13px; color: #636366; margin-top: 2px; }
+  .result-item.best .cl { color: #25a244; }
+  .rc { text-align: right; }
+  .dur { font-size: 14px; color: #636366; }
+  .result-item.best .dur { color: #25a244; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: #30d158; color: #000; margin-top: 4px; }
+  .note { font-size: 13px; color: #48484a; text-align: center; margin-top: 1.25rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Sleep Calculator</h1>
+  <p class="subtitle">Enter when you're closing your eyes</p>
+
+  <div class="toggle-row">
+    <span class="toggle-label active" id="lbl-s">Simple</span>
+    <button class="toggle-track" id="tog" onclick="switchMode()"><div class="toggle-thumb"></div></button>
+    <span class="toggle-label" id="lbl-w">Wheel</span>
+  </div>
+
+  <div id="simple-ui">
+    <div class="card">
+      <div class="card-label">I'm going to sleep at...</div>
+      <div class="time-row">
+        <input type="time" id="tInput" value="22:30" oninput="calculate()">
+        <button class="now-btn" onclick="simpleNow()">Now</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="wheel-ui" style="display:none">
+    <div class="card">
+      <div class="card-label">I'm going to sleep at...</div>
+      <div class="wheel-now-row"><button class="now-btn" onclick="wheelNow()">Now</button></div>
+      <div class="wheel-outer">
+        <div class="drum" id="dH"><div class="drum-sel-bar"></div><div class="drum-fade-top"></div><div class="drum-fade-bot"></div><div class="drum-inner" id="dH-i"></div></div>
+        <div class="wheel-sep">:</div>
+        <div class="drum" id="dM"><div class="drum-sel-bar"></div><div class="drum-fade-top"></div><div class="drum-fade-bot"></div><div class="drum-inner" id="dM-i"></div></div>
+        <div class="ampm-col">
+          <div class="drum narrow" id="dA"><div class="drum-sel-bar"></div><div class="drum-fade-top"></div><div class="drum-fade-bot"></div><div class="drum-inner" id="dA-i"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Wake up at...</div>
+  <div class="results" id="res"></div>
+  <p class="note">Includes 15 min to fall asleep</p>
+</div>
+
+<script>
+const IH = 53, REPS = 60;
+const H12 = [1,2,3,4,5,6,7,8,9,10,11,12];
+const M15 = [0,15,30,45];
+const AMP = ['AM','PM'];
+function pad(n){ return String(n).padStart(2,'0'); }
+
+let useWheel = false;
+let wtm = 22*60+30;
+
+function hIdx(){ return H12.indexOf((Math.floor(wtm/60)%12)||12); }
+function mIdx(){ let i=M15.indexOf(wtm%60); return i<0?0:i; }
+function aIdx(){ return Math.floor(wtm/60)>=12?1:0; }
+
+function calculate(){
+  const base=(useWheel?wtm:simpleWtm())+15;
+  const container=document.getElementById('res');
+  container.innerHTML='';
+  [3,4,5,6].forEach((c,i)=>{
+    const tm=base+c*90,wH=Math.floor(tm/60)%24,wM=tm%60;
+    const sm=c*90+15,hw=Math.floor(sm/60),mr=sm%60;
+    const dur=mr?`${hw}h ${mr}m sleep`:`${hw}h sleep`;
+    const best=i>=2;
+    const ap=wH>=12?'pm':'am',h12=wH%12||12;
+    const d=document.createElement('div');
+    d.className='result-item'+(best?' best':'');
+    d.innerHTML=`<div><div class="wt">${h12}:${pad(wM)} ${ap}</div><div class="cl">${c} cycles</div></div><div class="rc"><div class="dur">${dur}</div>${best?'<span class="badge">optimal</span>':''}</div>`;
+    container.appendChild(d);
+  });
+}
+
+function simpleWtm(){
+  const v=document.getElementById('tInput').value||'22:30';
+  const [h,m]=v.split(':').map(Number); return h*60+m;
+}
+function simpleNow(){
+  const n=new Date();
+  document.getElementById('tInput').value=pad(n.getHours())+':'+pad(n.getMinutes());
+  calculate();
+}
+function switchMode(){
+  useWheel=!useWheel;
+  document.getElementById('tog').classList.toggle('on',useWheel);
+  document.getElementById('lbl-s').classList.toggle('active',!useWheel);
+  document.getElementById('lbl-w').classList.toggle('active',useWheel);
+  document.getElementById('simple-ui').style.display=useWheel?'none':'block';
+  document.getElementById('wheel-ui').style.display=useWheel?'block':'none';
+  if(useWheel){ wtm=simpleWtm(); DH.jump(hIdx()); DM.jump(mIdx()); DA.jump(aIdx()); }
+  else{ const h=Math.floor(wtm/60),m=wtm%60; document.getElementById('tInput').value=pad(h)+':'+pad(m); }
+  calculate();
+}
+function wheelNow(){
+  const n=new Date(); wtm=n.getHours()*60+Math.round(n.getMinutes()/15)*15;
+  if(wtm>=1440)wtm=1425;
+  DH.jump(hIdx()); DM.jump(mIdx()); DA.jump(aIdx()); calculate();
+}
+
+function makeDrum(elId, innerId, items, getIdx, onChange){
+  const el=document.getElementById(elId);
+  const inner=document.getElementById(innerId);
+  const n=items.length;
+  const mid=Math.floor(REPS/2);
+
+  inner.innerHTML='';
+  for(let r=0;r<REPS;r++) items.forEach(v=>{
+    const d=document.createElement('div');
+    d.className='drum-item';
+    d.textContent=typeof v==='number'?pad(v):v;
+    inner.appendChild(d);
+  });
+
+  let px=0, rafId=null;
+
+  function selIdx(){ return(((-Math.round(px/IH))%n)+n)%n; }
+  function recentre(){
+    const lim=(REPS-8)*n*IH, low=4*n*IH;
+    if(-px>lim) px+=Math.floor(REPS/2)*n*IH;
+    if(-px<low) px-=Math.floor(REPS/2)*n*IH;
+  }
+  function render(animated, dur){
+    inner.style.transition=animated?`transform ${dur||0.18}s cubic-bezier(0.25,0.46,0.45,0.94)`:'none';
+    inner.style.transform=`translateY(${px+IH}px)`;
+    const s=selIdx();
+    inner.querySelectorAll('.drum-item').forEach((el,i)=>el.classList.toggle('sel',i%n===s));
+  }
+  function snap(animated, dur){
+    px=Math.round(px/IH)*IH; recentre(); render(animated,dur); onChange(selIdx());
+  }
+  function cancelMomentum(){ if(rafId){ cancelAnimationFrame(rafId); rafId=null; } }
+  function runMomentum(vel){
+    let v=vel*16; const friction=0.88, minSpeed=0.5;
+    function step(){
+      if(Math.abs(v)<minSpeed){ snap(true,0.15); rafId=null; return; }
+      px+=v; v*=friction; recentre(); render(false); onChange(selIdx());
+      rafId=requestAnimationFrame(step);
+    }
+    rafId=requestAnimationFrame(step);
+  }
+  function init(idx){ px=-(mid*n+idx)*IH; render(false); }
+  init(getIdx());
+
+  let sy=0,so=0,drag=false,pts=[];
+
+  el.addEventListener('pointerdown',e=>{
+    cancelMomentum(); el.setPointerCapture(e.pointerId);
+    sy=e.clientY; so=px; drag=true;
+    pts=[{y:e.clientY,t:performance.now()}];
+    inner.style.transition='none';
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    px=so+(e.clientY-sy); recentre(); render(false); onChange(selIdx());
+    pts.push({y:e.clientY,t:performance.now()});
+    if(pts.length>8) pts.shift();
+  });
+  el.addEventListener('pointerup',()=>{
+    if(!drag)return; drag=false;
+    let vel=0;
+    const now=performance.now(), recent=pts.filter(p=>now-p.t<80);
+    if(recent.length>=2){
+      const p0=recent[0],p1=recent[recent.length-1],dt=p1.t-p0.t;
+      if(dt>0) vel=(p1.y-p0.y)/dt;
+    }
+    if(Math.abs(vel)>0.15) runMomentum(vel); else snap(true,0.18);
+  });
+  el.addEventListener('wheel',e=>{
+    e.preventDefault(); cancelMomentum();
+    px-=(e.deltaY>0?1:-1)*IH; snap(true,0.12);
+  },{passive:false});
+
+  return{
+    jump(idx){ cancelMomentum(); init(idx); onChange(selIdx()); },
+    sync(idx){
+      cancelMomentum();
+      const cur=selIdx();
+      let d=idx-cur; if(d>n/2)d-=n; if(d<-n/2)d+=n;
+      px-=d*IH; snap(true,0.18);
+    }
+  };
+}
+
+let DH,DM,DA;
+
+DH=makeDrum('dH','dH-i',H12,hIdx,idx=>{
+  const m=wtm%60,ap=aIdx();
+  let h=H12[idx]; if(ap===1&&h!==12)h+=12; if(ap===0&&h===12)h=0;
+  wtm=h*60+m; calculate();
+});
+DM=makeDrum('dM','dM-i',M15,mIdx,idx=>{
+  const oldM=mIdx(),h=Math.floor(wtm/60);
+  wtm=h*60+M15[idx];
+  if(oldM===3&&idx===0){ wtm=(wtm+60)%1440; DH.sync(hIdx()); DA.sync(aIdx()); }
+  if(oldM===0&&idx===3){ wtm=((wtm-60)+1440)%1440; DH.sync(hIdx()); DA.sync(aIdx()); }
+  calculate();
+});
+DA=makeDrum('dA','dA-i',AMP,aIdx,idx=>{
+  const h=Math.floor(wtm/60),m=wtm%60;
+  if(idx===1&&h<12)wtm=(h+12)*60+m;
+  if(idx===0&&h>=12)wtm=(h-12)*60+m;
+  calculate();
+});
+
+calculate();
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+</script>
+</body>
+</html>
