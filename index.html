@@ -61,17 +61,22 @@
 <body>
 <div class="wrap">
   <h1>Sleep Calculator</h1>
-  <p class="subtitle">Enter when you're closing your eyes</p>
+  <p class="subtitle" id="subtitle">Enter when you're closing your eyes</p>
 
   <div class="toggle-row">
     <span class="toggle-label active" id="lbl-s">Simple</span>
     <button class="toggle-track" id="tog" onclick="switchMode()"><div class="toggle-thumb"></div></button>
     <span class="toggle-label" id="lbl-w">Wheel</span>
   </div>
+  <div class="toggle-row">
+    <span class="toggle-label active" id="lbl-st">Sleep time</span>
+    <button class="toggle-track" id="tog2" onclick="switchDirection()"><div class="toggle-thumb"></div></button>
+    <span class="toggle-label" id="lbl-wt">Wake time</span>
+  </div>
 
   <div id="simple-ui">
     <div class="card">
-      <div class="card-label">I'm going to sleep at...</div>
+      <div class="card-label" id="simple-card-label">I'm going to sleep at...</div>
       <div class="time-row">
         <input type="time" id="tInput" value="22:30" oninput="calculate()">
         <button class="now-btn" onclick="simpleNow()">Now</button>
@@ -81,7 +86,7 @@
 
   <div id="wheel-ui" style="display:none">
     <div class="card">
-      <div class="card-label">I'm going to sleep at...</div>
+      <div class="card-label" id="wheel-card-label">I'm going to sleep at...</div>
       <div class="wheel-now-row"><button class="now-btn" onclick="wheelNow()">Now</button></div>
       <div class="wheel-outer">
         <div class="drum" id="dH"><div class="drum-sel-bar"></div><div class="drum-fade-top"></div><div class="drum-fade-bot"></div><div class="drum-inner" id="dH-i"></div></div>
@@ -94,7 +99,7 @@
     </div>
   </div>
 
-  <div class="section-label">Wake up at...</div>
+  <div class="section-label" id="section-label">Wake up at...</div>
   <div class="results" id="res"></div>
   <p class="note">Includes 15 min to fall asleep</p>
 </div>
@@ -107,6 +112,7 @@ const AMP = ['AM','PM'];
 function pad(n){ return String(n).padStart(2,'0'); }
 
 let useWheel = false;
+let useReverse = false;
 let wtm = 22*60+30;
 
 function hIdx(){ return H12.indexOf((Math.floor(wtm/60)%12)||12); }
@@ -114,20 +120,34 @@ function mIdx(){ const r=Math.round((wtm%60)/15)*15%60; wtm=Math.floor(wtm/60)*6
 function aIdx(){ return Math.floor(wtm/60)>=12?1:0; }
 
 function calculate(){
-  const base=(useWheel?wtm:simpleWtm())+15;
+  const input=useWheel?wtm:simpleWtm();
   const container=document.getElementById('res');
   container.innerHTML='';
   [3,4,5,6].forEach((c,i)=>{
-    const tm=base+c*90,wH=Math.floor(tm/60)%24,wM=tm%60;
+    const tm=useReverse?((input-15-c*90)%1440+1440)%1440:(input+15+c*90);
+    const tH=Math.floor(tm/60)%24,tM=tm%60;
     const sm=c*90+15,hw=Math.floor(sm/60),mr=sm%60;
     const dur=mr?`${hw}h ${mr}m sleep`:`${hw}h sleep`;
     const best=i>=2;
-    const ap=wH>=12?'pm':'am',h12=wH%12||12;
+    const ap=tH>=12?'pm':'am',h12=tH%12||12;
     const d=document.createElement('div');
     d.className='result-item'+(best?' best':'');
-    d.innerHTML=`<div><div class="wt">${h12}:${pad(wM)} ${ap}</div><div class="cl">${c} cycles</div></div><div class="rc"><div class="dur">${dur}</div>${best?'<span class="badge">optimal</span>':''}<br><button class="alarm-btn" onclick="setAlarm(${wH},${wM})">Set alarm</button></div>`;
+    const alarmBtn=useReverse?'':`<br><button class="alarm-btn" onclick="setAlarm(${tH},${tM})">Set alarm</button>`;
+    d.innerHTML=`<div><div class="wt">${h12}:${pad(tM)} ${ap}</div><div class="cl">${c} cycles</div></div><div class="rc"><div class="dur">${dur}</div>${best?'<span class="badge">optimal</span>':''}${alarmBtn}</div>`;
     container.appendChild(d);
   });
+}
+
+function switchDirection(){
+  useReverse=!useReverse;
+  document.getElementById('tog2').classList.toggle('on',useReverse);
+  document.getElementById('lbl-st').classList.toggle('active',!useReverse);
+  document.getElementById('lbl-wt').classList.toggle('active',useReverse);
+  document.getElementById('subtitle').textContent=useReverse?"Enter when you need to wake up":"Enter when you're closing your eyes";
+  document.getElementById('simple-card-label').textContent=useReverse?"I need to wake up at...":"I'm going to sleep at...";
+  document.getElementById('wheel-card-label').textContent=useReverse?"I need to wake up at...":"I'm going to sleep at...";
+  document.getElementById('section-label').textContent=useReverse?"Go to sleep at...":"Wake up at...";
+  calculate();
 }
 
 function simpleWtm(){
