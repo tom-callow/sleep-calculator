@@ -184,11 +184,13 @@ function makeDrum(elId, innerId, items, getIdx, onChange){
   const mid=Math.floor(REPS/2);
 
   inner.innerHTML='';
+  const allItems=[];
   for(let r=0;r<REPS;r++) items.forEach(v=>{
     const d=document.createElement('div');
     d.className='drum-item';
     d.textContent=typeof v==='number'?pad(v):v;
     inner.appendChild(d);
+    allItems.push(d);
   });
 
   let px=0, rafId=null;
@@ -203,7 +205,7 @@ function makeDrum(elId, innerId, items, getIdx, onChange){
     inner.style.transition=animated?`transform ${dur||0.18}s cubic-bezier(0.25,0.46,0.45,0.94)`:'none';
     inner.style.transform=`translateY(${px+IH}px)`;
     const s=selIdx();
-    inner.querySelectorAll('.drum-item').forEach((el,i)=>el.classList.toggle('sel',i%n===s));
+    allItems.forEach((el,i)=>el.classList.toggle('sel',i%n===s));
   }
   function snap(animated, dur){
     px=Math.round(px/IH)*IH; recentre(); render(animated,dur); onChange(selIdx());
@@ -211,9 +213,11 @@ function makeDrum(elId, innerId, items, getIdx, onChange){
   function cancelMomentum(){ if(rafId){ cancelAnimationFrame(rafId); rafId=null; } }
   function runMomentum(vel){
     let v=vel*16; const friction=0.88, minSpeed=0.5;
+    let lastIdx=selIdx();
     function step(){
       if(Math.abs(v)<minSpeed){ snap(true,0.15); rafId=null; return; }
-      px+=v; v*=friction; recentre(); render(false); onChange(selIdx());
+      px+=v; v*=friction; recentre(); render(false);
+      const idx=selIdx(); if(idx!==lastIdx){ lastIdx=idx; onChange(idx); }
       rafId=requestAnimationFrame(step);
     }
     rafId=requestAnimationFrame(step);
@@ -221,17 +225,18 @@ function makeDrum(elId, innerId, items, getIdx, onChange){
   function init(idx){ px=-(mid*n+idx)*IH; render(false); }
   init(getIdx());
 
-  let sy=0,so=0,drag=false,pts=[];
+  let sy=0,so=0,drag=false,pts=[],so_idx=-1;
 
   el.addEventListener('pointerdown',e=>{
     cancelMomentum(); el.setPointerCapture(e.pointerId);
-    sy=e.clientY; so=px; drag=true;
+    sy=e.clientY; so=px; drag=true; so_idx=selIdx();
     pts=[{y:e.clientY,t:performance.now()}];
     inner.style.transition='none';
   });
   el.addEventListener('pointermove',e=>{
     if(!drag)return;
-    px=so+(e.clientY-sy); recentre(); render(false); onChange(selIdx());
+    px=so+(e.clientY-sy); recentre(); render(false);
+    const idx=selIdx(); if(idx!==so_idx){ so_idx=idx; onChange(idx); }
     pts.push({y:e.clientY,t:performance.now()});
     if(pts.length>8) pts.shift();
   });
