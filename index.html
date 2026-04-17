@@ -54,6 +54,8 @@
   .result-item.best .dur { color: #25a244; }
   .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: #30d158; color: #000; margin-top: 4px; }
   .note { font-size: 13px; color: #48484a; text-align: center; margin-top: 1.25rem; }
+  .alarm-btn { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: #2c2c2e; color: #0a84ff; border: none; cursor: pointer; margin-top: 6px; }
+  .alarm-btn:active { opacity: 0.6; }
 </style>
 </head>
 <body>
@@ -123,7 +125,7 @@ function calculate(){
     const ap=wH>=12?'pm':'am',h12=wH%12||12;
     const d=document.createElement('div');
     d.className='result-item'+(best?' best':'');
-    d.innerHTML=`<div><div class="wt">${h12}:${pad(wM)} ${ap}</div><div class="cl">${c} cycles</div></div><div class="rc"><div class="dur">${dur}</div>${best?'<span class="badge">optimal</span>':''}</div>`;
+    d.innerHTML=`<div><div class="wt">${h12}:${pad(wM)} ${ap}</div><div class="cl">${c} cycles</div></div><div class="rc"><div class="dur">${dur}</div>${best?'<span class="badge">optimal</span>':''}<br><button class="alarm-btn" onclick="setAlarm(${wH},${wM})">Set alarm</button></div>`;
     container.appendChild(d);
   });
 }
@@ -261,6 +263,12 @@ DA=makeDrum('dA','dA-i',AMP,aIdx,idx=>{
 });
 
 calculate();
+
+function setAlarm(h, m){
+  const ap=h>=12?'PM':'AM', h12=h%12||12;
+  const time=`${h12}:${pad(m)} ${ap}`;
+  window.location.href=`shortcuts://run-shortcut?name=Sleep%20Alarm&input=${encodeURIComponent(time)}`;
+}
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
 </script>
