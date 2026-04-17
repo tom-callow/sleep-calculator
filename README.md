@@ -1,31 +1,29 @@
 # Sleep Calculator
 
-A minimal sleep cycle calculator designed to be saved to your iPhone home screen.
+A minimal sleep cycle calculator designed to live on your iPhone home screen.
 
-Enter your bedtime and it returns optimal wake-up times based on 90-minute sleep cycles — or flip to reverse mode and enter when you need to wake up to get ideal bedtimes instead.
+Enter your bedtime and it returns optimal wake-up times based on 90-minute sleep cycles. Flip to reverse mode to enter a wake time and get ideal bedtimes instead.
 
 **Live:** [tom-callow.github.io/sleep-calculator](https://tom-callow.github.io/sleep-calculator)
 
 ## Features
 
-- Forward mode: enter sleep time → get wake times
-- Reverse mode: enter wake time → get bedtimes
+- Forward and reverse mode (sleep time → wake times, or wake time → bedtimes)
 - Simple time input or iOS-style wheel picker
-- Set alarm button (requires a one-time iOS Shortcut setup — see below)
-- Highlights optimal wake times (5–6 cycles)
+- Defaults to current time on load
+- Set alarm button via iOS Shortcuts
 - Works offline (PWA)
-- No dependencies, no build step
 
 ## Install on iPhone
 
-Open the link above in Safari → Share → Add to Home Screen.
+Open the link in Safari → Share → Add to Home Screen.
 
-## Set Alarm shortcut setup
+## Set Alarm setup
 
-The "Set alarm" button passes the selected wake time to an iOS Shortcut. To set it up, create a new Shortcut named exactly `Sleep Alarm` with these three actions:
+Create a Shortcut named exactly `Sleep Alarm` with three actions:
 
 1. **Find Alarms** → Label → is → `Sleep`
 2. **Delete Alarms**
 3. **Add New Alarm** → Time: `Shortcut Input` → Label: `Sleep`
 
-This deletes any existing alarm labelled "Sleep" and creates a fresh one — all other alarms are left untouched.
+Only alarms labelled "Sleep" are affected — all others are left untouched.
